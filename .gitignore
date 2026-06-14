@@ -1,0 +1,13 @@
+# OS
+.DS_Store
+Thumbs.db
+.env
+.env.*
+!.env.example
+*.log
+/vendor/
+bin/
+.idea/
+.vscode/
+*.test
+reports/
