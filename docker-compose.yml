@@ -1,0 +1,18 @@
+services:
+  logalyzer-batch:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: logalyzer:batch
+    environment:
+      - MODE=batch
+      - BATCH_CONFIG=/app/batch-config.yaml
+      - BATCH_OUTPUT=/app/batch-results
+      - BATCH_BASE_CONFIG=/app/config.yaml
+    volumes:
+      - ./sample-logs/prod/today:/logs/prod/today:ro
+      - ./sample-logs/prod/yesterday:/logs/prod/yesterday:ro
+      - ./sample-logs/staging:/logs/staging:ro
+      - ./sample-logs/dev:/logs/dev:ro
+      - ./batch-results:/app/batch-results
+    command: []

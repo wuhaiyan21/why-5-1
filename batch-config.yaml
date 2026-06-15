@@ -1,0 +1,20 @@
+base_config: /app/config.yaml
+
+entries:
+  - name: "prod-env-today"
+    log_dir: "/logs/prod/today"
+    since: ""
+    until: ""
+
+  - name: "prod-env-yesterday"
+    log_dir: "/logs/prod/yesterday"
+    since: ""
+    until: ""
+
+  - name: "staging-env"
+    log_dir: "/logs/staging"
+    since: "2026-06-01T00:00:00"
+    until: "2026-06-15T23:59:59"
+
+  - name: "dev-env"
+    log_dir: "/logs/dev"

@@ -1,8 +1,10 @@
 package report
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -300,4 +302,133 @@ func truncate(s string, maxLen int) string {
 		return s
 	}
 	return s[:maxLen] + "..."
+}
+
+type BatchSummaryRow struct {
+	Name         string
+	Success      bool
+	ErrorMsg     string
+	Critical     int
+	Error        int
+	Warning      int
+	Info         int
+	Debug        int
+	RuleHitCount int
+	TimeStart    string
+	TimeEnd      string
+}
+
+var CSVHeaders = []string{
+	"name",
+	"success",
+	"error",
+	"critical",
+	"error_count",
+	"warning",
+	"info",
+	"debug",
+	"rule_hits",
+	"time_start",
+	"time_end",
+}
+
+var CSVHeaderDescriptions = map[string]string{
+	"name":        "配置组名称标识",
+	"success":     "扫描是否成功 (true/false)",
+	"error":       "失败原因 (成功时为空)",
+	"critical":    "critical级别去重计数",
+	"error_count": "error级别去重计数",
+	"warning":     "warning级别去重计数",
+	"info":        "info级别去重计数",
+	"debug":       "debug级别去重计数",
+	"rule_hits":   "命中规则数量 (去重后不同规则数)",
+	"time_start":  "日志时间范围起始 (首次匹配时间)",
+	"time_end":    "日志时间范围结束 (末次匹配时间)",
+}
+
+func BuildSummaryRow(name string, a *analyzer.Analyzer, scanErr error) BatchSummaryRow {
+	row := BatchSummaryRow{
+		Name:    name,
+		Success: scanErr == nil,
+	}
+	if scanErr != nil {
+		row.ErrorMsg = scanErr.Error()
+		return row
+	}
+
+	sevCounts := make(map[string]int)
+	for _, sc := range a.GetSeverityCounts() {
+		sevCounts[sc.Severity] = sc.Count
+	}
+	row.Critical = sevCounts["critical"]
+	row.Error = sevCounts["error"]
+	row.Warning = sevCounts["warning"]
+	row.Info = sevCounts["info"]
+	row.Debug = sevCounts["debug"]
+
+	row.RuleHitCount = len(a.GetTopRules(1000000))
+
+	first, last := a.GetTimeRange()
+	if !first.IsZero() {
+		row.TimeStart = first.Format("2006-01-02 15:04:05")
+	}
+	if !last.IsZero() {
+		row.TimeEnd = last.Format("2006-01-02 15:04:05")
+	}
+	return row
+}
+
+func SortSummaryRows(rows []BatchSummaryRow) {
+	sort.Slice(rows, func(i, j int) bool {
+		if rows[i].Critical != rows[j].Critical {
+			return rows[i].Critical > rows[j].Critical
+		}
+		return rows[i].Name < rows[j].Name
+	})
+}
+
+func GenerateSummaryCSV(rows []BatchSummaryRow) (string, error) {
+	var buf strings.Builder
+	w := csv.NewWriter(&buf)
+
+	if err := w.Write(CSVHeaders); err != nil {
+		return "", fmt.Errorf("failed to write CSV header: %w", err)
+	}
+
+	for _, r := range rows {
+		record := []string{
+			r.Name,
+			fmt.Sprintf("%t", r.Success),
+			r.ErrorMsg,
+			fmt.Sprintf("%d", r.Critical),
+			fmt.Sprintf("%d", r.Error),
+			fmt.Sprintf("%d", r.Warning),
+			fmt.Sprintf("%d", r.Info),
+			fmt.Sprintf("%d", r.Debug),
+			fmt.Sprintf("%d", r.RuleHitCount),
+			r.TimeStart,
+			r.TimeEnd,
+		}
+		if err := w.Write(record); err != nil {
+			return "", fmt.Errorf("failed to write CSV row: %w", err)
+		}
+	}
+
+	w.Flush()
+	if err := w.Error(); err != nil {
+		return "", fmt.Errorf("failed to flush CSV: %w", err)
+	}
+	return buf.String(), nil
+}
+
+func PrintCSVHeaderDescriptions() {
+	fmt.Fprintln(os.Stderr, "=== 汇总对比表 CSV 列说明 ===")
+	for i, h := range CSVHeaders {
+		desc, ok := CSVHeaderDescriptions[h]
+		if !ok {
+			desc = "-"
+		}
+		fmt.Fprintf(os.Stderr, "  %-15s %s\n", h, desc)
+	}
+	fmt.Fprintln(os.Stderr, "==============================")
 }
