@@ -1,0 +1,10 @@
+2026-06-15T10:00:01 INFO Server started successfully
+2026-06-15T10:05:23 WARNING High memory usage detected: 85%
+2026-06-15T10:15:42 ERROR Failed to connect to database: connection refused
+2026-06-15T10:16:00 ERROR Failed to connect to database: connection refused
+2026-06-15T10:20:15 CRITICAL Out of memory: heap overflow
+2026-06-15T10:25:33 INFO Request processed in 45ms
+2026-06-15T10:30:00 WARNING Slow query detected: took 2500ms
+2026-06-15T10:35:12 ERROR authentication failed for user admin
+2026-06-15T10:40:00 INFO Request processed in 12ms
+2026-06-15T10:45:30 CRITICAL Out of memory: OOM killer invoked

@@ -5,9 +5,11 @@ Thumbs.db
 .env.*
 !.env.example
 *.log
+!/sample-logs/**/*.log
 /vendor/
 bin/
 .idea/
 .vscode/
 *.test
 reports/
+batch-results/

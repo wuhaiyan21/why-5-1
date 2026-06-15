@@ -1,0 +1,6 @@
+2026-06-10T11:00:01 INFO Staging server started
+2026-06-10T11:05:33 DEBUG Processing request id=12345
+2026-06-10T11:10:15 WARNING Deprecated API endpoint called
+2026-06-10T11:15:22 ERROR access denied for token expired
+2026-06-10T11:20:00 INFO Request processed in 22ms
+2026-06-10T11:25:44 WARNING Slow query detected: took 900ms

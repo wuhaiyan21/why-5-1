@@ -14,7 +14,7 @@ import (
 func main() {
 	batchConfig := flag.String("batch-config", "batch-config.yaml", "Path to batch config YAML file")
 	outputDir := flag.String("output", "./batch-results", "Output parent directory for batch results")
-	baseConfig := flag.String("config", "config.yaml", "Path to base config YAML file (used when entry has no override)")
+	baseConfig := flag.String("config", "", "Path to base config YAML file (overrides base_config in batch config)")
 	pollInterval := flag.Duration("poll-interval", 500*time.Millisecond, "Polling interval for log files")
 
 	flag.Usage = func() {
@@ -41,10 +41,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	effectiveBaseConfig := *baseConfig
+	if effectiveBaseConfig == "" {
+		effectiveBaseConfig = bc.BaseConfig
+	}
+	if effectiveBaseConfig == "" {
+		effectiveBaseConfig = "config.yaml"
+	}
+	fmt.Fprintf(os.Stderr, "Using base config: %s\n", effectiveBaseConfig)
+
 	report.PrintCSVHeaderDescriptions()
 	fmt.Fprintf(os.Stderr, "\n开始批量扫描，共 %d 组...\n", len(bc.Entries))
 
-	rows, err := batch.RunBatch(bc, *baseConfig, *outputDir, *pollInterval)
+	rows, err := batch.RunBatch(bc, effectiveBaseConfig, *outputDir, *pollInterval)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Batch scan completed with errors: %v\n", err)
 	}

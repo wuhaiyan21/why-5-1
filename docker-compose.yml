@@ -8,7 +8,7 @@ services:
       - MODE=batch
       - BATCH_CONFIG=/app/batch-config.yaml
       - BATCH_OUTPUT=/app/batch-results
-      - BATCH_BASE_CONFIG=/app/config.yaml
+      - BATCH_BASE_CONFIG=
     volumes:
       - ./sample-logs/prod/today:/logs/prod/today:ro
       - ./sample-logs/prod/yesterday:/logs/prod/yesterday:ro

@@ -423,7 +423,7 @@ func GenerateSummaryCSV(rows []BatchSummaryRow) (string, error) {
 
 func PrintCSVHeaderDescriptions() {
 	fmt.Fprintln(os.Stderr, "=== 汇总对比表 CSV 列说明 ===")
-	for i, h := range CSVHeaders {
+	for _, h := range CSVHeaders {
 		desc, ok := CSVHeaderDescriptions[h]
 		if !ok {
 			desc = "-"

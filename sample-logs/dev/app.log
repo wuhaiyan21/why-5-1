@@ -1,0 +1,5 @@
+2026-06-12T14:00:01 DEBUG Dev server started in debug mode
+2026-06-12T14:05:12 DEBUG Loading configuration file
+2026-06-12T14:10:00 INFO Dev request processed in 5ms
+2026-06-12T14:15:33 DEBUG SQL query executed: SELECT * FROM users
+2026-06-12T14:20:45 WARNING invalid credentials for test user
