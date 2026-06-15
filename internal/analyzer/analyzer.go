@@ -20,23 +20,23 @@ type RuleMatch struct {
 }
 
 type FileStats struct {
-	Path     string
+	Path       string
 	TotalLines int
 }
 
 type Analyzer struct {
-	cfg          *config.Config
-	rules        []config.Rule
-	dedupeWindow time.Duration
-	since        time.Time
-	until        time.Time
+	cfg           *config.Config
+	rules         []config.Rule
+	dedupeWindow  time.Duration
+	since         time.Time
+	until         time.Time
 
-	mu           sync.Mutex
+	mu            sync.Mutex
 	severityCount map[string]int
 	ruleMatches   map[string]*RuleMatch
 	fileStats     map[string]*FileStats
 
-	dedupeCache  map[string][]time.Time
+	dedupeCache   map[string][]time.Time
 }
 
 func New(cfg *config.Config, since, until time.Time) *Analyzer {
@@ -45,12 +45,23 @@ func New(cfg *config.Config, since, until time.Time) *Analyzer {
 		dedupeWindow = 5 * time.Minute
 	}
 
+	rules := make([]config.Rule, len(cfg.Rules))
+	copy(rules, cfg.Rules)
+	for i := range rules {
+		if rules[i].Priority == 0 {
+			rules[i].Priority = len(cfg.Rules) - i
+		}
+	}
+	sort.Slice(rules, func(i, j int) bool {
+		return rules[i].Priority > rules[j].Priority
+	})
+
 	return &Analyzer{
-		cfg:          cfg,
-		rules:        cfg.Rules,
-		dedupeWindow: dedupeWindow,
-		since:        since,
-		until:        until,
+		cfg:           cfg,
+		rules:         rules,
+		dedupeWindow:  dedupeWindow,
+		since:         since,
+		until:         until,
 		severityCount: make(map[string]int),
 		ruleMatches:   make(map[string]*RuleMatch),
 		fileStats:     make(map[string]*FileStats),

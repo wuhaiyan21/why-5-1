@@ -12,6 +12,7 @@ type Rule struct {
 	Name     string `yaml:"name"`
 	Pattern  string `yaml:"pattern"`
 	Severity string `yaml:"severity"`
+	Priority int    `yaml:"priority"`
 	Regex    *regexp.Regexp
 }
 

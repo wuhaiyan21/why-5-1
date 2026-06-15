@@ -27,7 +27,7 @@ var timePatterns = []struct {
 		trimLen: 0,
 	},
 	{
-		regex:   regexp.MustCompile(`^\[(\d{2}/\w{3}/\d{4}:\d{2}:\d{2}:\d{2}\s[+-]\d{4})\]`),
+		regex:   regexp.MustCompile(`\[(\d{2}/\w{3}/\d{4}:\d{2}:\d{2}:\d{2}\s[+-]\d{4})\]`),
 		format:  "02/Jan/2006:15:04:05 -0700",
 		trimLen: 0,
 	},

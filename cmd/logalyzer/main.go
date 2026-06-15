@@ -20,10 +20,15 @@ func main() {
 	sinceStr := flag.String("since", "", "Start time filter (format: 2006-01-02T15:04:05)")
 	untilStr := flag.String("until", "", "End time filter (format: 2006-01-02T15:04:05)")
 	logDir := flag.String("log-dir", "", "Log directory (overrides config)")
-	follow := flag.Bool("follow", false, "Follow log files continuously (like tail -f)")
+	once := flag.Bool("once", false, "Read existing log content once and exit, do not follow new lines")
+	follow := flag.Bool("follow", true, "Follow log files continuously (default: true, use --once to disable)")
 	pollInterval := flag.Duration("poll-interval", 500*time.Millisecond, "Polling interval for log files")
 	output := flag.String("output", "", "Output file for Markdown report (default: stdout)")
 	flag.Parse()
+
+	if *once {
+		*follow = false
+	}
 
 	var since, until time.Time
 	var err error

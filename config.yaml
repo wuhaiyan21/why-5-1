@@ -1,46 +1,55 @@
 log_dir: /var/log
 log_files:
   - "*.log"
-  - "app.log"
 dedupe_window_minutes: 5
 
 rules:
-  - name: error_fatal
-    pattern: "(?i)\\b(fatal|error|exception)\\b"
+  - name: http_5xx
+    pattern: "HTTP/[0-9.]+\" 5[0-9]{2} "
     severity: "error"
-
-  - name: warning
-    pattern: "(?i)\\b(warn|warning)\\b"
-    severity: "warning"
-
-  - name: info
-    pattern: "(?i)\\b(info|information)\\b"
-    severity: "info"
-
-  - name: debug
-    pattern: "(?i)\\b(debug|trace)\\b"
-    severity: "debug"
+    priority: 100
 
   - name: http_4xx
     pattern: "HTTP/[0-9.]+\" 4[0-9]{2} "
     severity: "warning"
-
-  - name: http_5xx
-    pattern: "HTTP/[0-9.]+\" 5[0-9]{2} "
-    severity: "error"
-
-  - name: slow_query
-    pattern: "(?i)slow.*query|query.*slow|took.*[0-9]+.*ms"
-    severity: "warning"
+    priority: 90
 
   - name: memory_issue
     pattern: "(?i)(out of memory|oom|memory leak|heap overflow)"
     severity: "critical"
+    priority: 80
 
   - name: connection_refused
     pattern: "(?i)connection refused|connection reset|connection timeout"
     severity: "error"
+    priority: 70
 
   - name: auth_failure
     pattern: "(?i)authentication failed|access denied|invalid credentials|unauthorized"
     severity: "warning"
+    priority: 60
+
+  - name: slow_query
+    pattern: "(?i)slow.*query|query.*slow|took.*[0-9]+.*ms"
+    severity: "warning"
+    priority: 50
+
+  - name: error_fatal
+    pattern: "(?i)\\b(fatal|error|exception)\\b"
+    severity: "error"
+    priority: 10
+
+  - name: warning
+    pattern: "(?i)\\b(warn|warning)\\b"
+    severity: "warning"
+    priority: 9
+
+  - name: info
+    pattern: "(?i)\\b(info|information)\\b"
+    severity: "info"
+    priority: 5
+
+  - name: debug
+    pattern: "(?i)\\b(debug|trace)\\b"
+    severity: "debug"
+    priority: 1

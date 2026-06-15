@@ -205,8 +205,21 @@ func (t *Tailer) readAll() int {
 
 		currentSize := info.Size()
 		if currentSize < tracker.Size {
-			tracker.Offset = 0
-			if _, err := tracker.File.Seek(0, 0); err != nil {
+			if t.follow {
+				tracker.Offset = currentSize
+				if _, err := tracker.File.Seek(currentSize, 0); err != nil {
+					continue
+				}
+				tracker.Reader = bufio.NewReader(tracker.File)
+			} else {
+				tracker.Offset = 0
+				if _, err := tracker.File.Seek(0, 0); err != nil {
+					continue
+				}
+				tracker.Reader = bufio.NewReader(tracker.File)
+			}
+		} else if currentSize > tracker.Offset {
+			if _, err := tracker.File.Seek(tracker.Offset, 0); err != nil {
 				continue
 			}
 			tracker.Reader = bufio.NewReader(tracker.File)
