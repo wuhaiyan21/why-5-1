@@ -1,12 +1,58 @@
 package report
 
 import (
+	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
 	"logalyzer/internal/analyzer"
 )
+
+type SeverityCountJSON struct {
+	Severity string `json:"severity"`
+	Count    int    `json:"count"`
+}
+
+type TopRuleJSON struct {
+	Rank        int    `json:"rank"`
+	RuleName    string `json:"rule_name"`
+	Severity    string `json:"severity"`
+	UniqueCount int    `json:"unique_count"`
+	TotalCount  int    `json:"total_count"`
+	FirstSeen   string `json:"first_seen"`
+	LastSeen    string `json:"last_seen"`
+	Message     string `json:"message"`
+}
+
+type FileStatJSON struct {
+	Path       string `json:"path"`
+	TotalLines int    `json:"total_lines"`
+}
+
+type TimeRangeJSON struct {
+	FirstSeen string `json:"first_seen,omitempty"`
+	LastSeen  string `json:"last_seen,omitempty"`
+	Since     string `json:"since_filter,omitempty"`
+	Until     string `json:"until_filter,omitempty"`
+	HasMatches bool  `json:"has_matches"`
+}
+
+type HourlyBucketJSON struct {
+	Hour          string            `json:"hour"`
+	SeverityCount map[string]int    `json:"severity_count"`
+}
+
+type ReportJSON struct {
+	Title          string              `json:"title"`
+	GeneratedAt    string              `json:"generated_at"`
+	TimeRange      TimeRangeJSON       `json:"time_range"`
+	SeverityCounts []SeverityCountJSON `json:"severity_counts"`
+	TopRules       []TopRuleJSON       `json:"top_rules"`
+	FileStats      []FileStatJSON      `json:"file_stats"`
+	HourlyStats    []HourlyBucketJSON  `json:"hourly_stats"`
+}
 
 func Generate(a *analyzer.Analyzer, since, until time.Time) string {
 	var sb strings.Builder
@@ -103,7 +149,150 @@ func Generate(a *analyzer.Analyzer, since, until time.Time) string {
 	}
 	sb.WriteString("\n")
 
+	sb.WriteString("## 按小时聚合统计\n\n")
+	hourlyBuckets := a.GetHourlyBuckets()
+	allSeverities := collectAllSeverities(severityCounts, hourlyBuckets)
+	if len(hourlyBuckets) == 0 {
+		sb.WriteString("无匹配记录，小时统计为空。\n")
+	} else {
+		sb.WriteString("| 小时桶 |")
+		for _, sev := range allSeverities {
+			sb.WriteString(fmt.Sprintf(" %s |", sev))
+		}
+		sb.WriteString(" 合计 |\n")
+		sb.WriteString("|--------|")
+		for range allSeverities {
+			sb.WriteString("--------|")
+		}
+		sb.WriteString("------|\n")
+		for _, bucket := range hourlyBuckets {
+			sb.WriteString(fmt.Sprintf("| %s |", bucket.Hour))
+			total := 0
+			for _, sev := range allSeverities {
+				cnt := bucket.SeverityCount[sev]
+				total += cnt
+				sb.WriteString(fmt.Sprintf(" %d |", cnt))
+			}
+			sb.WriteString(fmt.Sprintf(" %d |\n", total))
+		}
+	}
+	sb.WriteString("\n")
+
 	return sb.String()
+}
+
+func GenerateJSON(a *analyzer.Analyzer, since, until time.Time) (string, error) {
+	first, last := a.GetTimeRange()
+	severityCounts := a.GetSeverityCounts()
+	topRules := a.GetTopRules(10)
+	fileStats := a.GetFileStats()
+	hourlyBuckets := a.GetHourlyBuckets()
+
+	tr := TimeRangeJSON{
+		HasMatches: !first.IsZero(),
+	}
+	if !first.IsZero() {
+		tr.FirstSeen = first.Format("2006-01-02 15:04:05")
+		tr.LastSeen = last.Format("2006-01-02 15:04:05")
+	}
+	if !since.IsZero() {
+		tr.Since = since.Format("2006-01-02 15:04:05")
+	}
+	if !until.IsZero() {
+		tr.Until = until.Format("2006-01-02 15:04:05")
+	}
+
+	scJSON := make([]SeverityCountJSON, 0, len(severityCounts))
+	for _, sc := range severityCounts {
+		scJSON = append(scJSON, SeverityCountJSON{
+			Severity: sc.Severity,
+			Count:    sc.Count,
+		})
+	}
+
+	trJSON := make([]TopRuleJSON, 0, len(topRules))
+	for i, rule := range topRules {
+		trJSON = append(trJSON, TopRuleJSON{
+			Rank:        i + 1,
+			RuleName:    rule.RuleName,
+			Severity:    rule.Severity,
+			UniqueCount: rule.UniqueCount,
+			TotalCount:  rule.Count,
+			FirstSeen:   rule.FirstSeen.Format("2006-01-02 15:04:05"),
+			LastSeen:    rule.LastSeen.Format("2006-01-02 15:04:05"),
+			Message:     rule.Message,
+		})
+	}
+
+	fsJSON := make([]FileStatJSON, 0, len(fileStats))
+	for _, fs := range fileStats {
+		fsJSON = append(fsJSON, FileStatJSON{
+			Path:       fs.Path,
+			TotalLines: fs.TotalLines,
+		})
+	}
+
+	hsJSON := make([]HourlyBucketJSON, 0, len(hourlyBuckets))
+	for _, hb := range hourlyBuckets {
+		hsJSON = append(hsJSON, HourlyBucketJSON{
+			Hour:          hb.Hour,
+			SeverityCount: hb.SeverityCount,
+		})
+	}
+
+	report := ReportJSON{
+		Title:          "日志聚合分析报告",
+		GeneratedAt:    time.Now().Format("2006-01-02 15:04:05"),
+		TimeRange:      tr,
+		SeverityCounts: scJSON,
+		TopRules:       trJSON,
+		FileStats:      fsJSON,
+		HourlyStats:    hsJSON,
+	}
+
+	data, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal JSON report: %w", err)
+	}
+	return string(data), nil
+}
+
+func collectAllSeverities(counts []analyzer.SeverityCount, buckets []analyzer.HourlyBucket) []string {
+	set := make(map[string]struct{})
+	for _, sc := range counts {
+		set[sc.Severity] = struct{}{}
+	}
+	for _, b := range buckets {
+		for sev := range b.SeverityCount {
+			set[sev] = struct{}{}
+		}
+	}
+	result := make([]string, 0, len(set))
+	for sev := range set {
+		result = append(result, sev)
+	}
+	severityOrder := map[string]int{
+		"critical": 0,
+		"error":    1,
+		"warning":  2,
+		"info":     3,
+		"debug":    4,
+	}
+	sort.Slice(result, func(i, j int) bool {
+		oi, oki := severityOrder[result[i]]
+		oj, okj := severityOrder[result[j]]
+		if oki && okj {
+			return oi < oj
+		}
+		if oki {
+			return true
+		}
+		if okj {
+			return false
+		}
+		return result[i] < result[j]
+	})
+	return result
 }
 
 func truncate(s string, maxLen int) string {

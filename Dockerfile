@@ -24,6 +24,8 @@ COPY config.yaml /app/config.yaml
 RUN chmod +x /usr/local/bin/logalyzer
 
 ENV LOG_DIR=/var/log
+ENV OUTPUT_FORMAT=markdown
+ENV OUTPUT_FILE=
+ENV ONCE=true
 
-ENTRYPOINT ["logalyzer"]
-CMD ["--config", "/app/config.yaml"]
+ENTRYPOINT ["/bin/sh", "-c", "ARGS=\"--config /app/config.yaml --log-dir ${LOG_DIR}\"; [ -n \"${OUTPUT_FORMAT}\" ] && ARGS=\"${ARGS} --format ${OUTPUT_FORMAT}\"; [ -n \"${OUTPUT_FILE}\" ] && ARGS=\"${ARGS} --output ${OUTPUT_FILE}\"; [ \"${ONCE}\" = \"true\" ] && ARGS=\"${ARGS} --once\"; exec logalyzer ${ARGS}"]

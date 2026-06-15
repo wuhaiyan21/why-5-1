@@ -3,6 +3,10 @@ log_files:
   - "*.log"
 dedupe_window_minutes: 5
 
+alert_thresholds:
+  critical: 0
+  error: 0
+
 rules:
   - name: http_5xx
     pattern: "HTTP/[0-9.]+\" 5[0-9]{2} "

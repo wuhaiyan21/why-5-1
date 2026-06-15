@@ -16,11 +16,17 @@ type Rule struct {
 	Regex    *regexp.Regexp
 }
 
+type AlertThresholds struct {
+	Critical int `yaml:"critical"`
+	Error    int `yaml:"error"`
+}
+
 type Config struct {
-	LogDir       string `yaml:"log_dir"`
-	LogFiles     []string `yaml:"log_files"`
-	Rules        []Rule `yaml:"rules"`
-	DedupeWindow int    `yaml:"dedupe_window_minutes"`
+	LogDir          string          `yaml:"log_dir"`
+	LogFiles        []string        `yaml:"log_files"`
+	Rules           []Rule          `yaml:"rules"`
+	DedupeWindow    int             `yaml:"dedupe_window_minutes"`
+	AlertThresholds AlertThresholds `yaml:"alert_thresholds"`
 }
 
 func Load(path string) (*Config, error) {

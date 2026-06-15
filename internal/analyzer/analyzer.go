@@ -24,6 +24,11 @@ type FileStats struct {
 	TotalLines int
 }
 
+type HourlyBucket struct {
+	Hour          string
+	SeverityCount map[string]int
+}
+
 type Analyzer struct {
 	cfg           *config.Config
 	rules         []config.Rule
@@ -35,6 +40,7 @@ type Analyzer struct {
 	severityCount map[string]int
 	ruleMatches   map[string]*RuleMatch
 	fileStats     map[string]*FileStats
+	hourlyBuckets map[string]map[string]int
 
 	dedupeCache   map[string][]time.Time
 }
@@ -65,6 +71,7 @@ func New(cfg *config.Config, since, until time.Time) *Analyzer {
 		severityCount: make(map[string]int),
 		ruleMatches:   make(map[string]*RuleMatch),
 		fileStats:     make(map[string]*FileStats),
+		hourlyBuckets: make(map[string]map[string]int),
 		dedupeCache:   make(map[string][]time.Time),
 	}
 }
@@ -107,16 +114,17 @@ func (a *Analyzer) countMatch(rule config.Rule, message string, t time.Time) {
 	match, ok := a.ruleMatches[key]
 	if !ok {
 		match = &RuleMatch{
-			RuleName:  rule.Name,
-			Severity:  rule.Severity,
-			Message:   message,
-			FirstSeen: t,
-			LastSeen:  t,
-			Count:     1,
+			RuleName:    rule.Name,
+			Severity:    rule.Severity,
+			Message:     message,
+			FirstSeen:   t,
+			LastSeen:    t,
+			Count:       1,
 			UniqueCount: 1,
 		}
 		a.ruleMatches[key] = match
 		a.severityCount[rule.Severity]++
+		a.countHourly(rule.Severity, t, 1)
 	} else {
 		match.Count++
 		if t.Before(match.FirstSeen) {
@@ -128,8 +136,19 @@ func (a *Analyzer) countMatch(rule config.Rule, message string, t time.Time) {
 		if !isDuplicate {
 			match.UniqueCount++
 			a.severityCount[rule.Severity]++
+			a.countHourly(rule.Severity, t, 1)
 		}
 	}
+}
+
+func (a *Analyzer) countHourly(severity string, t time.Time, delta int) {
+	hourKey := t.Format("2006-01-02 15:00")
+	bucket, ok := a.hourlyBuckets[hourKey]
+	if !ok {
+		bucket = make(map[string]int)
+		a.hourlyBuckets[hourKey] = bucket
+	}
+	bucket[severity] += delta
 }
 
 func (a *Analyzer) checkDuplicate(key string, t time.Time) bool {
@@ -229,4 +248,29 @@ func (a *Analyzer) GetTimeRange() (first, last time.Time) {
 		}
 	}
 	return
+}
+
+func (a *Analyzer) GetHourlyBuckets() []HourlyBucket {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	hours := make([]string, 0, len(a.hourlyBuckets))
+	for h := range a.hourlyBuckets {
+		hours = append(hours, h)
+	}
+	sort.Strings(hours)
+
+	result := make([]HourlyBucket, 0, len(hours))
+	for _, h := range hours {
+		sevMap := a.hourlyBuckets[h]
+		sevCopy := make(map[string]int, len(sevMap))
+		for k, v := range sevMap {
+			sevCopy[k] = v
+		}
+		result = append(result, HourlyBucket{
+			Hour:          h,
+			SeverityCount: sevCopy,
+		})
+	}
+	return result
 }
