@@ -16,6 +16,8 @@ func main() {
 	outputDir := flag.String("output", "./batch-results", "Output parent directory for batch results")
 	baseConfig := flag.String("config", "", "Path to base config YAML file (overrides base_config in batch config)")
 	pollInterval := flag.Duration("poll-interval", 500*time.Millisecond, "Polling interval for log files")
+	verbose := flag.Bool("verbose", false, "Show detailed scan progress for each group")
+	noHTML := flag.Bool("no-html", false, "Skip generating HTML comparison report")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: logalyzer-batch [options]\n\n")
@@ -24,10 +26,11 @@ func main() {
 		flag.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "\n输出结构:\n")
 		fmt.Fprintf(os.Stderr, "  <output>/\n")
-		fmt.Fprintf(os.Stderr, "    summary.csv          汇总对比表 (CSV)\n")
+		fmt.Fprintf(os.Stderr, "    summary.csv              汇总对比表 (CSV)\n")
+		fmt.Fprintf(os.Stderr, "    comparison_report.html   HTML 对比报告 (默认生成, --no-html 跳过)\n")
 		fmt.Fprintf(os.Stderr, "    <entry-name-1>/\n")
-		fmt.Fprintf(os.Stderr, "      report.json        该组的 JSON 摘要报告\n")
-		fmt.Fprintf(os.Stderr, "      report.md          该组的 Markdown 报告\n")
+		fmt.Fprintf(os.Stderr, "      report.json            该组的 JSON 摘要报告\n")
+		fmt.Fprintf(os.Stderr, "      report.md              该组的 Markdown 报告\n")
 		fmt.Fprintf(os.Stderr, "    <entry-name-2>/\n")
 		fmt.Fprintf(os.Stderr, "      report.json\n")
 		fmt.Fprintf(os.Stderr, "      report.md\n")
@@ -53,7 +56,7 @@ func main() {
 	report.PrintCSVHeaderDescriptions()
 	fmt.Fprintf(os.Stderr, "\n开始批量扫描，共 %d 组...\n", len(bc.Entries))
 
-	rows, err := batch.RunBatch(bc, effectiveBaseConfig, *outputDir, *pollInterval)
+	rows, _, err := batch.RunBatch(bc, effectiveBaseConfig, *outputDir, *pollInterval, *verbose, !*noHTML)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Batch scan completed with errors: %v\n", err)
 	}
