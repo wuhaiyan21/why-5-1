@@ -9,6 +9,8 @@ services:
       - BATCH_CONFIG=/app/batch-config.yaml
       - BATCH_OUTPUT=/app/batch-results
       - BATCH_BASE_CONFIG=
+      - VERBOSE=false
+      - NO_HTML=false
     volumes:
       - ./sample-logs/prod/today:/logs/prod/today:ro
       - ./sample-logs/prod/yesterday:/logs/prod/yesterday:ro
@@ -23,8 +25,3 @@ services:
       #   ./batch-results/dev-env/
       #   ./batch-results/nonexistent-env/
       - ./batch-results:/app/batch-results
-    command: []
-    # 可通过 command 传递额外参数，例如:
-    # command: ["--verbose"]
-    # command: ["--no-html"]
-    # command: ["--verbose", "--no-html"]

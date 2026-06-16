@@ -541,6 +541,7 @@ func GenerateComparisonHTML(rows []BatchSummaryRow, details []GroupDetail) (stri
           <th>序号</th>
           <th>名称</th>
           <th>状态</th>
+          <th>失败原因</th>
           <th>Critical</th>
           <th>Error</th>
           <th>Warning</th>
@@ -570,10 +571,16 @@ func GenerateComparisonHTML(rows []BatchSummaryRow, details []GroupDetail) (stri
 			timeRange = row.TimeStart + "<br>~ " + row.TimeEnd
 		}
 
+		errorCell := "-"
+		if !row.Success {
+			errorCell = fmt.Sprintf(`<span style="color:#991b1b;font-family:monospace;font-size:12px;">%s</span>`, row.ErrorMsg)
+		}
+
 		sb.WriteString(fmt.Sprintf(`
         <tr>
           <td>%d</td>
           <td><strong>%s</strong></td>
+          <td>%s</td>
           <td>%s</td>
           <td class="sev-critical">%d</td>
           <td class="sev-error">%d</td>
@@ -583,7 +590,7 @@ func GenerateComparisonHTML(rows []BatchSummaryRow, details []GroupDetail) (stri
           <td>%d</td>
           <td style="font-size:12px">%s</td>
         </tr>
-`, i+1, row.Name, statusBadge, row.Critical, row.Error, row.Warning, row.Info, row.Debug, row.RuleHitCount, timeRange))
+`, i+1, row.Name, statusBadge, errorCell, row.Critical, row.Error, row.Warning, row.Info, row.Debug, row.RuleHitCount, timeRange))
 	}
 
 	sb.WriteString(`

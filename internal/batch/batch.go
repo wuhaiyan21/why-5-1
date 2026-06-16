@@ -45,6 +45,9 @@ func RunBatch(bc *config.BatchConfig, baseConfigPath string, outputParentDir str
 		row := report.BuildSummaryRow(result.Name, result.Analyzer, result.Err)
 		summaryRows = append(summaryRows, row)
 
+		if verbose {
+			fmt.Fprintln(os.Stderr)
+		}
 		if result.Err != nil {
 			fmt.Fprintf(os.Stderr, "[%d/%d] %-25s 失败: %v\n", len(summaryRows), len(bc.Entries), result.Name, result.Err)
 		} else {

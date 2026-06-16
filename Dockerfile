@@ -38,6 +38,8 @@ ENV ONCE=true
 ENV BATCH_CONFIG=/app/batch-config.yaml
 ENV BATCH_OUTPUT=/app/batch-results
 ENV BATCH_BASE_CONFIG=
+ENV VERBOSE=false
+ENV NO_HTML=false
 ENV MODE=single
 
-ENTRYPOINT ["/bin/sh", "-c", "if [ \"$MODE\" = \"batch\" ]; then ARGS=\"--batch-config ${BATCH_CONFIG} --output ${BATCH_OUTPUT}\"; [ -n \"${BATCH_BASE_CONFIG}\" ] && ARGS=\"${ARGS} --config ${BATCH_BASE_CONFIG}\"; exec logalyzer-batch ${ARGS}; else ARGS=\"--config /app/config.yaml --log-dir ${LOG_DIR}\"; [ -n \"${OUTPUT_FORMAT}\" ] && ARGS=\"${ARGS} --format ${OUTPUT_FORMAT}\"; [ -n \"${OUTPUT_FILE}\" ] && ARGS=\"${ARGS} --output ${OUTPUT_FILE}\"; [ \"${ONCE}\" = \"true\" ] && ARGS=\"${ARGS} --once\"; exec logalyzer ${ARGS}; fi"]
+ENTRYPOINT ["/bin/sh", "-c", "if [ \"$MODE\" = \"batch\" ]; then ARGS=\"--batch-config ${BATCH_CONFIG} --output ${BATCH_OUTPUT}\"; [ -n \"${BATCH_BASE_CONFIG}\" ] && ARGS=\"${ARGS} --config ${BATCH_BASE_CONFIG}\"; [ \"${VERBOSE}\" = \"true\" ] && ARGS=\"${ARGS} --verbose\"; [ \"${NO_HTML}\" = \"true\" ] && ARGS=\"${ARGS} --no-html\"; exec logalyzer-batch ${ARGS}; else ARGS=\"--config /app/config.yaml --log-dir ${LOG_DIR}\"; [ -n \"${OUTPUT_FORMAT}\" ] && ARGS=\"${ARGS} --format ${OUTPUT_FORMAT}\"; [ -n \"${OUTPUT_FILE}\" ] && ARGS=\"${ARGS} --output ${OUTPUT_FILE}\"; [ \"${ONCE}\" = \"true\" ] && ARGS=\"${ARGS} --once\"; exec logalyzer ${ARGS}; fi"]
